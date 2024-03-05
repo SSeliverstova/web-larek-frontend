@@ -5,7 +5,7 @@
   @include mixins.sublayer;
   height: max-content;
   position: absolute;
-  display: none;
+  display: block;
   justify-content: center;
   background-color: $overlayBackground;
   z-index: 100;
