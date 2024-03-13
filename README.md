@@ -11,21 +11,94 @@
 - src/pages/index.html — HTML-файл главной страницы
 - src/types/index.ts — файл с типами
 - src/index.ts — точка входа приложения
-- src/styles/styles.scss — корневой файл стилей
+- src/scss/styles.scss — корневой файл стилей
 - src/utils/constants.ts — файл с константами
 - src/utils/utils.ts — файл с утилитами
 
+## Базовый код
+```TypeScript
+//Базовый компонент, имеет все базовые свойства и методы
+abstract class Component<T> {
+    protected constructor(protected readonly container: HTMLElement) {
+    }
+
+    // Переключить класс
+    toggleClass(element: HTMLElement, className: string, force?: boolean)
+
+    // Установить текстовое содержимое
+    protected setText(element: HTMLElement, value: unknown)
+
+    // Сменить статус блокировки
+    setDisabled(element: HTMLElement, state: boolean)
+
+    // Скрыть
+    protected setHidden(element: HTMLElement)
+
+    // Показать
+    protected setVisible(element: HTMLElement)
+
+    // Установить изображение с алтернативным текстом
+    protected setImage(element: HTMLImageElement, src: string, alt?: string)
+
+    // Вернуть корневой DOM-элемент
+    render(data?: Partial<T>): HTMLElement
+}
+
+//API, реализует взаимодействие с бэкендом
+class Api {
+    //базовый URL
+    readonly baseUrl: string;
+    //опции
+    protected options: RequestInit;
+
+    constructor(baseUrl: string, options: RequestInit = {})
+
+    //возвращает промис с данными
+    protected handleResponse(response: Response): Promise<object>
+
+    //get запрос
+    get(uri: string)
+
+    //post запрос
+    post(uri: string, data: object, method: ApiPostMethods = 'POST')
+}
+
+//Обработчик событий
+class EventEmitter implements IEvents {
+    _events: Map<EventName, Set<Subscriber>>;
+
+    constructor()
+
+    //Установить обработчик на событие
+    on<T extends object>(eventName: EventName, callback: (event: T) => void) 
+
+    //Снять обработчик с события
+    off(eventName: EventName, callback: Subscriber)
+
+    //Инициировать событие с данными
+    emit<T extends object>(eventName: string, data?: T)
+
+    //Слушать все события
+    onAll(callback: (event: EmitterEvent) => void)
+
+    //Сбросить все обработчики
+    offAll()
+
+    //Сделать коллбек триггер, генерирующий событие при вызове
+    trigger<T extends object>(eventName: string, context?: Partial<T>)
+}
+```
 ## Описание данных
 ```TypeScript
 //типы категорий товаров
-export type ICategory = 'другое' | 'софт-скил' | 'дополнительное' | 'кнопка' | 'хард-скил';
+export type Category = 'другое' | 'софт-скил' | 'дополнительное' | 'кнопка' | 'хард-скил';
 
 //интерфейс карточки товара
 export interface ICard {
     //id с сервера
     id: string;
     //категория товара - используется на главной странице Page и при просмотре карточки
-    category: ICategory;
+    category: Category;
     //наименование товара - используется на главной странице Page, при просмотре карточки и в корзине
     name: string;
     //описание товара - используется на при просмотре карточки
@@ -54,36 +127,86 @@ export interface IAppState {
 }
 
 //способы оплаты
-export type IPayment = 'Онлайн' | 'При получении';
+export type Payment = 'Онлайн' | 'При получении';
 
-//форма оформления заказа
-export interface IOrderForm {
-  //электронная почта
-  email: string;
-  //телефон
-  phone: string;
+//модальное окно для оформления доставки
+export interface IDeliveryForm {
   //адрес
   address: string;
   //способ оплаты
-  payment: IPayment;
+  payment: Payment;
+}
+
+//модальное окно "контакты"
+export interface IContactsForm {
+    //электронная почта
+    email: string;
+    //телефон
+    phone: string;
 }
 
 //заказ
-export interface IOrder extends IOrderForm {
+export interface IOrder extends IDeliveryForm, IContactsForm {
   //список товаров
   items: ICard[];
   //общая сумма заказа
   total: number;
 }
+
+//любое модальное окно
+export interface IModal {
+  //содержимое
+  content: HTMLElement;
+  //ошибки для форм ввода
+  errors?: string[];
+  //валидность формы для форм ввода
+  valid?:boolean;
+}
+
+//главная страница с каталогом товаров
+export interface IPage {
+  //массив карточек товаров
+  list: HTMLElement[];
+  //количество товаров в корзине
+  count: number;
+  //отмена прокрутки страницы
+  blocked: boolean;
+}
+
+//просмотр выбранного товара
+export interface IViewProduct {
+  //выбранный товар
+  product: HTMLElement;
+}
+
+//корзина
+export interface IBasket {
+  //массив карточек товаров
+  list: HTMLElement[];
+  //стоимость заказа
+  price: number;
+}
+
+//валидация форм
+export type FormErrors = Partial<Record<keyof IOrder, string>>;
+export interface IFormValidator {
+  formErrors: FormErrors;
+}
+
+//успешное оформление заказа
+export interface ISuccess {
+  //кол-во списанных коинов
+  count: number;
+}
 ```
 ## Модели данных
 ```TypeScript
 //Класс, который отвечает за хранение данных
-export class AppState implements IAppState {
+class AppState implements IAppState {
 	protected _count: number = 0;
 	protected event: IEvents;
 
-  //принимает в конструктор событие
+  //принимает в конструктор экземпляр брокера событий
 	constructor(event: IEvents) {
 		this.event = event;
 	}
@@ -142,19 +265,14 @@ export class AppState implements IAppState {
 ```
 ## Компоненты представления
 ```TypeScript
-//Базовый компонент, имеет все базовые свойства и методы
-export abstract class Component<T> {
-
-}
-
 //Класс для любых модальных окон, наследует Component
-export class Modal extends Component<IModal> {
-  //закрытие по оверфлоу
+class Modal extends Component<IModal> {
+  //закрытие по клику вне модального окна
   //закрытие по крестику
 }
 
 //Главная страница, содержит каталог товаров, наследует Component
-export class Page extends Component<IPage> {
+class Page extends Component<IPage> {
   //при нажатии на карточку товара открывается модальное окно с детальной информацией о товаре;
   //при нажатии на иконку корзины, открывается корзина.
   //имеет метод updateCount для обновления счетчика корзины
@@ -162,19 +280,19 @@ export class Page extends Component<IPage> {
 }
 
 //Карточка товара, наследует Component
-export class Card extends Component<ICard> {
+class Card extends Component<ICard> {
   //имеет методы для получения и передачи атрибутов карточки товара (картинка, наименование, описание, стоимость, признак выбран ли товар)
 }
 
 //Представление для просмотра выбранного товара, наследует Modal
-export class ViewProduct extends Modal<IViewProduct> {
+class ViewProduct extends Modal<IViewProduct> {
   //при нажатии на сабмит добавляем в корзину значок +1 и меняем содержимое корзины и сумму покупки
   //бесценный товар купить нельзя. деактивируем кнопку
   //закрываем карточку товара
 }
 
 //Представление для просмотра корзины, наследует Modal
-export class Basket extends Modal<IBasket> {
+class Basket extends Modal<IBasket> {
   //при нажатии на иконку корзины удаляем товар из корзины
   //при нажатии на сабмит закрываем форму и переключаемся на orderingFirst
   //имеет метод updateTotalPrice для обновления суммы заказа
@@ -182,26 +300,28 @@ export class Basket extends Modal<IBasket> {
 }
 
 //Представление для оформления заказа №1, наследует Modal
-export class OrderingFirst extends Modal<IOrderingFirst> {
+class DeliveryForm extends Modal<IDeliveryForm> {
   //при клике на один из вариатов способа оплаты, второй неактивен
   //при нажатии на сабмит закрываем форму и переключаемся на orderingSecond
 }
 
 //Представление для оформления заказа №2, наследует Modal
-export class orderingSecond extends Modal<IorderingSecond> {
+class ContactsForm extends Modal<IContactsForm> {
   //при нажатии на сабмит закрываем форму, очищаем заказ и переключаемся на Success
 }
 
 //Класс для валидации форм, наследует Component
-export class FormValidator extends Component<IFormValidator> {
+class FormValidator extends Component<IFormValidator> {
   //Кнопка перехода к следующему шагу становится доступна только после выполнения действий на текущей странице (выбора товара, способа оплаты, заполнения данных о покупателе)
   //если адрес доставки не введён, появляется сообщение об ошибке
   //если одно из полей не заполнено, появляется сообщение об ошибке
 }
 
 //Класс для оповещения об успешном оформлении заказа, наследует Modal
-export class Success extends Modal<ISuccess> {
-  
+class Success extends Modal<ISuccess> {
+  //выводится сумма оформленного заказа
+  //при нажатии на сабмит закрываем форму
+  //при закрытии формы любым способом обнуляем корзину
 }
 ```
 ## Описание событий
