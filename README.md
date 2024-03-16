@@ -19,8 +19,7 @@
 ```TypeScript
 //Базовый компонент, имеет все базовые свойства и методы
 abstract class Component<T> {
-    protected constructor(protected readonly container: HTMLElement) {
-    }
+    protected constructor(protected readonly container: HTMLElement)
 
     // Переключить класс
     toggleClass(element: HTMLElement, className: string, force?: boolean)
@@ -91,10 +90,10 @@ class EventEmitter implements IEvents {
 ## Описание данных
 ```TypeScript
 //типы категорий товаров
-export type Category = 'другое' | 'софт-скил' | 'дополнительное' | 'кнопка' | 'хард-скил';
+type Category = 'другое' | 'софт-скил' | 'дополнительное' | 'кнопка' | 'хард-скил';
 
 //интерфейс карточки товара
-export interface ICard {
+interface ICard {
     //id с сервера
     id: string;
     //категория товара - используется на главной странице Page и при просмотре карточки
@@ -112,12 +111,12 @@ export interface ICard {
 }
 
 //галерея товаров (список всех карточек с главной страницы)
-export interface IGallery {
+interface IGallery {
     cards: ICard[];
 }
 
 //состояние приложения
-export interface IAppState {
+interface IAppState {
     //список товаров
     catalog: IGallery;
     //корзина
@@ -127,10 +126,10 @@ export interface IAppState {
 }
 
 //способы оплаты
-export type Payment = 'Онлайн' | 'При получении';
+type Payment = 'Онлайн' | 'При получении';
 
 //модальное окно для оформления доставки
-export interface IDeliveryForm {
+interface IDeliveryForm {
   //адрес
   address: string;
   //способ оплаты
@@ -138,7 +137,7 @@ export interface IDeliveryForm {
 }
 
 //модальное окно "контакты"
-export interface IContactsForm {
+interface IContactsForm {
     //электронная почта
     email: string;
     //телефон
@@ -146,7 +145,7 @@ export interface IContactsForm {
 }
 
 //заказ
-export interface IOrder extends IDeliveryForm, IContactsForm {
+interface IOrder extends IDeliveryForm, IContactsForm {
   //список товаров
   items: ICard[];
   //общая сумма заказа
@@ -154,7 +153,7 @@ export interface IOrder extends IDeliveryForm, IContactsForm {
 }
 
 //любое модальное окно
-export interface IModal {
+interface IModal {
   //содержимое
   content: HTMLElement;
   //ошибки для форм ввода
@@ -164,7 +163,7 @@ export interface IModal {
 }
 
 //главная страница с каталогом товаров
-export interface IPage {
+interface IPage {
   //массив карточек товаров
   list: HTMLElement[];
   //количество товаров в корзине
@@ -174,13 +173,13 @@ export interface IPage {
 }
 
 //просмотр выбранного товара
-export interface IViewProduct {
+interface IViewProduct {
   //выбранный товар
   product: HTMLElement;
 }
 
 //корзина
-export interface IBasket {
+interface IBasket {
   //массив карточек товаров
   list: HTMLElement[];
   //стоимость заказа
@@ -188,13 +187,13 @@ export interface IBasket {
 }
 
 //валидация форм
-export type FormErrors = Partial<Record<keyof IOrder, string>>;
-export interface IFormValidator {
+type FormErrors = Partial<Record<keyof IOrder, string>>;
+interface IFormValidator {
   formErrors: FormErrors;
 }
 
 //успешное оформление заказа
-export interface ISuccess {
+interface ISuccess {
   //кол-во списанных коинов
   count: number;
 }
@@ -207,60 +206,31 @@ class AppState implements IAppState {
 	protected event: IEvents;
 
   //принимает в конструктор экземпляр брокера событий
-	constructor(event: IEvents) {
-		this.event = event;
-	}
+	constructor(event: IEvents)
 
   //метод для получения массива товароы для стартовой страницы
-  get gallery() {
-    //возвращает массив карточек с сервера
-  }
+  get gallery()
 
   //метод для добавления товара в корзину
-	add() {
-    //увеличивает значение счетчика корзины на 1
-		this._count += 1;
-    //запускает событие для изменения значения счетчика
-    this.event.emit('count:changed')
-    //добавляет в массив каточек корзины выбранную карточку
-	}
+	add()
 
   //метод для удаления товара из корзины
-	remove() {
-    //уменьшает значение счетчика корзины на 1
-		this._count -= 1;
-    //запускает событие для изменения значения счетчика
-    this.event.emit('count:changed')
-    //удаляет из массива каточек корзины выбранную карточку
-	}
+	remove()
 
   //метод для получения значения счетчика корзины (кол-ва товаров)
-	get count() {
-		return this._count;
-	}
+	get count()
 
   //метод для получения суммы заказа в корзине
-	get totalPrice() {
-    //возвращает сумму стоимостей всех добвленных товаров в массив корзины
-	}
+	get totalPrice()
 
   //метод для добавления значений id товаров, email, phone, address, payment в заказ
-	set dataBuyer() {
-    //добавляет id товаров из корзины в заказ
-    //добавляет данные пользователя из форм ввода в заказ
-	}
+	set dataBuyer()
 
   //метод для очистки корзины
-	resetBasket() {
-    //очищает массив карточек товаров в корзине после завершения заказа
-    //сбрасывает на 0 сумму заказа
-    //сбрасывает значение счетчика корзины на 0
-	}
+	resetBasket()
 
   //метод для очистки данных о пользователе в заказе
-	resetOrder() {
-    //очищает все поля заказа
-	}
+	resetOrder()
 }
 ```
 ## Компоненты представления
@@ -284,29 +254,29 @@ class Card extends Component<ICard> {
   //имеет методы для получения и передачи атрибутов карточки товара (картинка, наименование, описание, стоимость, признак выбран ли товар)
 }
 
-//Представление для просмотра выбранного товара, наследует Modal
-class ViewProduct extends Modal<IViewProduct> {
+//Представление для просмотра выбранного товара, наследует Component
+class ViewProduct extends Component<IViewProduct> {
   //при нажатии на сабмит добавляем в корзину значок +1 и меняем содержимое корзины и сумму покупки
   //бесценный товар купить нельзя. деактивируем кнопку
   //закрываем карточку товара
 }
 
-//Представление для просмотра корзины, наследует Modal
-class Basket extends Modal<IBasket> {
+//Представление для просмотра корзины, наследует Component
+class Basket extends Component<IBasket> {
   //при нажатии на иконку корзины удаляем товар из корзины
   //при нажатии на сабмит закрываем форму и переключаемся на orderingFirst
   //имеет метод updateTotalPrice для обновления суммы заказа
   //имеет метод updateDataSet для обновления массива карточек
 }
 
-//Представление для оформления заказа №1, наследует Modal
-class DeliveryForm extends Modal<IDeliveryForm> {
+//Представление для оформления заказа №1, наследует Component
+class DeliveryForm extends Component<IDeliveryForm> {
   //при клике на один из вариатов способа оплаты, второй неактивен
   //при нажатии на сабмит закрываем форму и переключаемся на orderingSecond
 }
 
-//Представление для оформления заказа №2, наследует Modal
-class ContactsForm extends Modal<IContactsForm> {
+//Представление для оформления заказа №2, наследует Component
+class ContactsForm extends Component<IContactsForm> {
   //при нажатии на сабмит закрываем форму, очищаем заказ и переключаемся на Success
 }
 
@@ -317,8 +287,8 @@ class FormValidator extends Component<IFormValidator> {
   //если одно из полей не заполнено, появляется сообщение об ошибке
 }
 
-//Класс для оповещения об успешном оформлении заказа, наследует Modal
-class Success extends Modal<ISuccess> {
+//Класс для оповещения об успешном оформлении заказа, наследует Component
+class Success extends Component<ISuccess> {
   //выводится сумма оформленного заказа
   //при нажатии на сабмит закрываем форму
   //при закрытии формы любым способом обнуляем корзину
