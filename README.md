@@ -83,7 +83,14 @@ class EventEmitter implements IEvents
 
     //Сделать коллбек триггер, генерирующий событие при вызове
     trigger<T extends object>(eventName: string, context?: Partial<T>)
+    
+//Базовая модель, чтобы можно было отличить ее от простых объектов с данными
+ abstract class Model<T>
+    // конструктор принимает данные и обработчик событий
+    constructor(data: Partial<T>, protected events: IEvents)
 
+    // Сообщить всем что модель поменялась
+    emitChanges(event: string, payload?: object)
 ```
 ## Описание данных
 ```TypeScript
@@ -209,14 +216,6 @@ interface ICardActions {
 ```
 ## Модели данных
 ```TypeScript
-//Базовая модель, чтобы можно было отличить ее от простых объектов с данными
- abstract class Model<T>
-    // конструктор принимает данные и обработчик событий
-    constructor(data: Partial<T>, protected events: IEvents)
-
-    // Сообщить всем что модель поменялась
-    emitChanges(event: string, payload?: object)
-
 //Класс, который отвечает за хранение данных товара
 class Product extends Model<IProduct>
   id: string;
@@ -409,6 +408,9 @@ class Basket extends Component<IBasket>
 
     //сеттер для обновления суммы заказа
     set price(value: number)
+
+    //метод для отключения кнопки
+    disableButton()
 
 //Представление для оформления заказа №1, наследует Form
 //при клике на один из вариатов способа оплаты, второй неактивен
