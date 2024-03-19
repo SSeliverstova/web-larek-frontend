@@ -1,12 +1,12 @@
 import {Component} from  './base/Component';
 import {createElement, ensureElement} from './../utils/utils';
 import {EventEmitter} from './base/events';
-import {IBasket} from '../types/index'
+import {IBasket} from '../types/index';
 
 export class Basket extends Component<IBasket> {
     protected _list: HTMLElement;
-    protected _total: HTMLElement;
-    protected _button: HTMLElement;
+    protected _total: HTMLElement | null;
+    protected _button: HTMLElement | null;
 
     constructor(container: HTMLElement, protected events: EventEmitter) {
         super(container);
@@ -34,15 +34,9 @@ export class Basket extends Component<IBasket> {
         }
     }
 
-    set selected(items: string[]) {
-        if (items.length) {
-            this.setDisabled(this._button, false);
-        } else {
-            this.setDisabled(this._button, true);
-        }
-    }
+    set price(value: number) {
+        this._total.textContent = String(value) + ' синапсов';
+      }
 
-    set total(total: number) {
-        this.setText(this._total, formatNumber(total));
-    }
+   
 }

@@ -19,7 +19,7 @@ export class Page extends Component<IPage> {
         this._basket = ensureElement<HTMLElement>('.header__basket');
 
         this._basket.addEventListener('click', () => {
-            this.events.emit('bids:open');
+            this.events.emit('basket:open');
         });
     }
 
@@ -39,7 +39,3 @@ export class Page extends Component<IPage> {
         }
     }
 }
-  //при нажатии на карточку товара открывается модальное окно с детальной информацией о товаре;
-  //при нажатии на иконку корзины, открывается корзина.
-  //имеет метод updateCount для обновления счетчика корзины
-  //имеет метод blocked для отмены прокрутки страницы

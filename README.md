@@ -18,7 +18,7 @@
 ## Базовый код
 ```TypeScript
 //Базовый компонент, имеет все базовые свойства и методы
-abstract class Component<T> {
+abstract class Component<T>
     protected constructor(protected readonly container: HTMLElement)
 
     // Переключить класс
@@ -41,10 +41,9 @@ abstract class Component<T> {
 
     // Вернуть корневой DOM-элемент
     render(data?: Partial<T>): HTMLElement
-}
 
 //API, реализует взаимодействие с бэкендом
-class Api {
+class Api
     //базовый URL
     readonly baseUrl: string;
     //опции
@@ -60,10 +59,9 @@ class Api {
 
     //post запрос
     post(uri: string, data: object, method: ApiPostMethods = 'POST')
-}
 
 //Обработчик событий
-class EventEmitter implements IEvents {
+class EventEmitter implements IEvents
     _events: Map<EventName, Set<Subscriber>>;
 
     constructor()
@@ -85,55 +83,54 @@ class EventEmitter implements IEvents {
 
     //Сделать коллбек триггер, генерирующий событие при вызове
     trigger<T extends object>(eventName: string, context?: Partial<T>)
-}
+
 ```
 ## Описание данных
 ```TypeScript
 //типы категорий товаров
 type Category = 'другое' | 'софт-скил' | 'дополнительное' | 'кнопка' | 'хард-скил';
 
-//интерфейс карточки товара
-interface ICard {
-    //id с сервера
-    id: string;
-    //категория товара - используется на главной странице Page и при просмотре карточки
-    category: Category;
-    //наименование товара - используется на главной странице Page, при просмотре карточки и в корзине
-    name: string;
-    //описание товара - используется на при просмотре карточки
-    description: string;
-    //картинка товара - используется на главной странице Page и при просмотре карточки
-    image: string;
-    //ценв товара - используется на главной странице Page, при просмотре карточки и в корзине
-    price: number | null;
+//интерфейс товара с сервера
+interface IProduct {
+   //id с сервера
+   id: string;
+   //категория товара - используется на главной странице Page и при просмотре карточки
+   category: Category;
+   //наименование товара - используется на главной странице Page, при просмотре карточки и в корзине
+   title: string;
+   //описание товара - используется на при просмотре карточки
+   description: string;
+   //картинка товара - используется на главной странице Page и при просмотре карточки
+   image: string;
+   //ценв товара - используется на главной странице Page, при просмотре карточки и в корзине
+   price: number | null;
     //находится ли товар в корзине
-    selected: boolean;
+   selected?: boolean;
 }
 
-//галерея товаров (список всех карточек с главной страницы)
-interface IGallery {
-    cards: ICard[];
+//интерфейс карточки товара
+interface ICard extends IProduct{
+   //находится ли товар в корзине
+  selected: boolean;
+  index?: number;
 }
 
 //состояние приложения
 interface IAppState {
     //список товаров
-    catalog: IGallery;
+    catalog: IProduct[];
     //корзина
-    basket: string[];
+    basket: IProduct[];
     //заказ
     order: IOrder | null;
 }
-
-//способы оплаты
-type Payment = 'Онлайн' | 'При получении';
 
 //модальное окно для оформления доставки
 interface IDeliveryForm {
   //адрес
   address: string;
   //способ оплаты
-  payment: Payment;
+  payment: string;
 }
 
 //модальное окно "контакты"
@@ -144,10 +141,14 @@ interface IContactsForm {
     phone: string;
 }
 
+//поля заказа
+interface IOrderForm extends IDeliveryForm, IContactsForm {
+}
+
 //заказ
 interface IOrder extends IDeliveryForm, IContactsForm {
-  //список товаров
-  items: ICard[];
+  //cписок id
+  items: string[];
   //общая сумма заказа
   total: number;
 }
@@ -156,10 +157,13 @@ interface IOrder extends IDeliveryForm, IContactsForm {
 interface IModal {
   //содержимое
   content: HTMLElement;
-  //ошибки для форм ввода
-  errors?: string[];
+}
+
+interface IForm {
   //валидность формы для форм ввода
-  valid?:boolean;
+  valid: boolean;
+  //ошибки для форм ввода
+  errors: string[];
 }
 
 //главная страница с каталогом товаров
@@ -172,50 +176,87 @@ interface IPage {
   blocked: boolean;
 }
 
-//просмотр выбранного товара
-interface IViewProduct {
-  //выбранный товар
-  product: HTMLElement;
-}
-
 //корзина
 interface IBasket {
   //массив карточек товаров
-  list: HTMLElement[];
+  items: HTMLElement[];
   //стоимость заказа
   price: number;
 }
 
-//валидация форм
+//валидация форм (ошибки)
 type FormErrors = Partial<Record<keyof IOrder, string>>;
-interface IFormValidator {
-  formErrors: FormErrors;
-}
 
 //успешное оформление заказа
 interface ISuccess {
+  //id с сервера
+  id: string;
   //кол-во списанных коинов
   count: number;
+}
+
+//клик успешного заказа
+interface ISuccessActions {
+  //клик
+  onClick: () => void;
+}
+
+//клик карточки товара
+interface ICardActions {
+  //клик
+  onClick: (event: MouseEvent) => void;
 }
 ```
 ## Модели данных
 ```TypeScript
-//Класс, который отвечает за хранение данных
-class AppState implements IAppState {
-	protected _count: number = 0;
-	protected event: IEvents;
+//Базовая модель, чтобы можно было отличить ее от простых объектов с данными
+ abstract class Model<T>
+    // конструктор принимает данные и обработчик событий
+    constructor(data: Partial<T>, protected events: IEvents)
 
-  //принимает в конструктор экземпляр брокера событий
-	constructor(event: IEvents)
+    // Сообщить всем что модель поменялась
+    emitChanges(event: string, payload?: object)
+
+//Класс, который отвечает за хранение данных товара
+class Product extends Model<IProduct>
+  id: string;
+  category: Category;
+  title: string;
+  description: string;
+  image: string;
+  price: number | null;
+  selected: boolean;
+
+//Класс, который отвечает за хранение данных
+class AppState extends Model<IAppState>
+  
+  //галерея
+  catalog: IProduct[];
+
+  //корзина
+  basket: IProduct[] = [];
+
+  //заказ
+  order: IOrder = {
+    address: '',
+    payment: null,
+    email: '',
+    phone: '',
+    items: [],
+    total: null,
+  };
+
+  //ошибки валидации
+  formErrors: FormErrors = {};
 
   //метод для получения массива товароы для стартовой страницы
-  get gallery()
+  setGallery(items: IProduct[]): void
 
   //метод для добавления товара в корзину
-	add()
+	add(value : Product)
 
   //метод для удаления товара из корзины
-	remove()
+	remove(id : string)
 
   //метод для получения значения счетчика корзины (кол-ва товаров)
 	get count()
@@ -223,99 +264,238 @@ class AppState implements IAppState {
   //метод для получения суммы заказа в корзине
 	get totalPrice()
 
-  //метод для добавления значений id товаров, email, phone, address, payment в заказ
-	set dataBuyer()
-
+  //метод для добавления значений id товаров в заказ
+	setDataBuyer()
+  
   //метод для очистки корзины
 	resetBasket()
 
   //метод для очистки данных о пользователе в заказе
 	resetOrder()
-}
+
+ //метод для установки значений атрибутам заказа (при успешной валидации)
+  setOrderField(field: keyof IOrderForm, value: string)
+  
+  //валидация формы ввода адреса и спобоба оплаты
+  validateOrder()
+
+  //валидация формы ввода почты и телефона оплаты
+  validateContacts()
+
+  //элемент больше не выбран 
+  resetSelect()
 ```
 ## Компоненты представления
 ```TypeScript
 //Класс для любых модальных окон, наследует Component
-class Modal extends Component<IModal> {
-  //закрытие по клику вне модального окна
-  //закрытие по крестику
-}
+class Modal extends Component<IModal>
+
+  //внутренние элементы
+  protected _closeButton: HTMLButtonElement;
+  protected _content: HTMLElement;
+
+  // конструктор принимает родительский элемент и обработчик событий
+  constructor(container: HTMLElement, protected events: IEvents)
+
+  //сеттер для содержимого
+  set content(value: HTMLElement)
+
+  //открыть
+  open()
+
+  //закрыть
+  close()
+
+  //отрисовать
+  render(data: IModal): HTMLElement
+
+//Класс для любых форм ввода, наследует Component
+//все поля валидируются
+class Form<T> extends Component<IForm>
+    
+    //внутренние элементы
+    protected _submit: HTMLButtonElement;
+    protected _errors: HTMLElement;
+
+    // конструктор принимает родительский элемент и обработчик событий
+    constructor(protected container: HTMLFormElement, protected events: IEvents)
+
+    //метод для отслеживания изменений полей ввода
+    protected onInputChange(field: keyof T, value: string)
+
+    //сеттер валидности
+    set valid(value: boolean)
+
+    //сеттер ошибок
+    set errors(value: string)
+
+    //отрисовать
+    render(state: Partial<T> & IForm)
 
 //Главная страница, содержит каталог товаров, наследует Component
-class Page extends Component<IPage> {
-  //при нажатии на карточку товара открывается модальное окно с детальной информацией о товаре;
-  //при нажатии на иконку корзины, открывается корзина.
-  //имеет метод updateCount для обновления счетчика корзины
-  //имеет метод blocked для отмены прокрутки страницы
-}
+//при нажатии на карточку товара открывается модальное окно с детальной информацией о товаре;
+//при нажатии на иконку корзины, открывается корзина.
+class Page extends Component<IPage>
+//внутренние элементы
+  protected _count: HTMLElement;
+    protected _catalog: HTMLElement;
+    protected _wrapper: HTMLElement;
+    protected _basket: HTMLElement;
+
+    // конструктор принимает родительский элемент и обработчик событий
+    constructor(container: HTMLElement, protected events: IEvents)
+
+    //сеттер для обновления счетчика корзины
+    set updateCount(value: number)
+
+    //сеттер для галереи
+    set list(items: HTMLElement[])
+
+    //метод blocked для отмены прокрутки страницы
+    set blocked(value: boolean)
 
 //Карточка товара, наследует Component
-class Card extends Component<ICard> {
-  //имеет методы для получения и передачи атрибутов карточки товара (картинка, наименование, описание, стоимость, признак выбран ли товар)
-}
+//имеет методы для получения и передачи атрибутов карточки товара
+//при нажатии на сабмит добавляем в корзину значок +1 и меняем содержимое корзины и сумму покупки
+//бесценный товар купить нельзя. деактивируем кнопку
+class Card extends Component<ICard>
 
-//Представление для просмотра выбранного товара, наследует Component
-class ViewProduct extends Component<IViewProduct> {
-  //при нажатии на сабмит добавляем в корзину значок +1 и меняем содержимое корзины и сумму покупки
-  //бесценный товар купить нельзя. деактивируем кнопку
-  //закрываем карточку товара
-}
+    //внутренние элементы
+    protected _title: HTMLElement;
+    protected _image?: HTMLImageElement;
+    protected _category?: HTMLElement | null;
+    protected _button?: HTMLButtonElement | null;
+    protected _price: HTMLElement | null;
+    protected _text?: HTMLElement | null;
+    protected _index?: HTMLElement | null;
+
+    // конструктор принимает родительский элемент и обработчик событий по клику
+    constructor(container: HTMLElement, actions?: ICardActions) 
+
+    //сеттер и геттер для id
+    set id(value: string)
+    get id(): string
+    //сеттер и геттер для наименования
+    set title(value: string) 
+    get title(): string
+    //сеттер и геттер для описания
+    set text(value: string)
+    get text(): string
+    //сеттер для картинки
+    set image(value: string)
+    //сеттер для признака выбран ли товар
+    set selected(value: boolean)
+    //сеттер для цены
+    set price(value: number | null)
+    //сеттер для категории
+    set category(value: Category)
+    //сеттер индекса для товара в корзине
+    set index(value: number)
 
 //Представление для просмотра корзины, наследует Component
-class Basket extends Component<IBasket> {
-  //при нажатии на иконку корзины удаляем товар из корзины
-  //при нажатии на сабмит закрываем форму и переключаемся на orderingFirst
-  //имеет метод updateTotalPrice для обновления суммы заказа
-  //имеет метод updateDataSet для обновления массива карточек
-}
+//при нажатии на иконку корзины удаляем товар из корзины
+//при нажатии на сабмит закрываем форму и переключаемся на DeliveryForm
+class Basket extends Component<IBasket>
+    //внутренние элементы
+    protected _list: HTMLElement;
+    protected _total: HTMLElement | null;
+    protected _button: HTMLElement | null;
 
-//Представление для оформления заказа №1, наследует Component
-class DeliveryForm extends Component<IDeliveryForm> {
-  //при клике на один из вариатов способа оплаты, второй неактивен
-  //при нажатии на сабмит закрываем форму и переключаемся на orderingSecond
-}
+    // конструктор принимает родительский элемент и обработчик событий
+    constructor(container: HTMLElement, protected events: EventEmitter)
 
-//Представление для оформления заказа №2, наследует Component
-class ContactsForm extends Component<IContactsForm> {
-  //при нажатии на сабмит закрываем форму, очищаем заказ и переключаемся на Success
-}
+    //сеттер товаров в корзине, устанавливает "Корзина пуста", если нет товаров в корзине
+    set items(items: HTMLElement[])
 
-//Класс для валидации форм, наследует Component
-class FormValidator extends Component<IFormValidator> {
-  //Кнопка перехода к следующему шагу становится доступна только после выполнения действий на текущей странице (выбора товара, способа оплаты, заполнения данных о покупателе)
-  //если адрес доставки не введён, появляется сообщение об ошибке
-  //если одно из полей не заполнено, появляется сообщение об ошибке
-}
+    //сеттер для обновления суммы заказа
+    set price(value: number)
+
+//Представление для оформления заказа №1, наследует Form
+//при клике на один из вариатов способа оплаты, второй неактивен
+//при нажатии на сабмит закрываем форму и переключаемся на ContactsForm
+class DeliveryForm extends Form<IDeliveryForm>
+  //внутренние элементы
+  protected _card: HTMLButtonElement;
+  protected _cash: HTMLButtonElement;
+  protected _button: HTMLElement;
+
+  // конструктор принимает родительский элемент и обработчик событий
+  constructor(container: HTMLFormElement, events: IEvents) 
+
+  //сеттер для способа оплаты
+  set payment(value: string)
+
+  //сеттер для адреса
+  set address(value: string)
+
+//Представление для ввода контактов, наследует Form
+//при нажатии на сабмит закрываем форму, очищаем заказ и переключаемся на Success
+class ContactsForm extends Form<IContactsForm>
+
+  // конструктор принимает родительский элемент и обработчик событий
+  constructor(container: HTMLFormElement, events: IEvents)
+
+//сеттер для телефона
+set phone(value: string)
+
+//сеттер для почты
+set email(value: string)
 
 //Класс для оповещения об успешном оформлении заказа, наследует Component
-class Success extends Component<ISuccess> {
-  //выводится сумма оформленного заказа
-  //при нажатии на сабмит закрываем форму
-  //при закрытии формы любым способом обнуляем корзину
-}
+class Success extends Component<ISuccess>
+
+  //внутренние элементы
+  protected _close: HTMLButtonElement;
+  protected _count: HTMLElement;
+
+    // конструктор принимает родительский элемент и обработчик событий по клику
+    constructor(container: HTMLElement, actions: ISuccessActions)
+
+    //сеттер для установки общей суммы оформленного заказа
+    set count(value: number)
+```
+## API
+```TypeScript
+class LarekAPI extends Api implements ILarekAPI
+    readonly cdn: string;
+    constructor(cdn: string, baseUrl: string, options?: RequestInit)
+
+    //возвращает товар
+    getProduct(id: string): Promise<ICard>
+
+    //возвращает список товаров
+    getProductList(): Promise<ICard[]>
 ```
 ## Описание событий
 ```TypeScript
-//Инициируется при добавлении в корзину (кнопка купить) или удалении товара из корзины (иконка корзины), изменяет список товаров в корзине
+//Инициируется при получении товаров с сервера и рендерит галерею
 'items:changed'
-//Инициируется при нажатии на карточку товара на главной странице и приводит к сохранению выбранной карточки
-'card:select'
-//Инициируется при изменении содержимого корзины и приводит к изменению счетчика товаров в корзине
-'count:changed'
-//Инициируется при изменении содержимого корзины и приводит к изменению суммы заказа
-'totalPrice:changed'
-//Инициируется при закрытии попапа "заказ оформлен" и приводит к удалению всех товаров из массива в корзине, обнулению суммы заказа и счетчика товаров в корзине, очистке всех полей заказа
-'basket:delete'
-//Инициируется при нажатии на кнопку "оформить" и сохраняет параметры заказа (id выбранных товаров, кол-во и стоимость)
+//Инициируется при нажатии на карточку товара на главной странице и приводит к сохранению выбранной карточки и отрисовке окна просмотра карточки
+'card:select', (item: Product)
+//Инициируется при нажатии на кнопку "в корзину" и приводит к добавлению товара в массив в корзине, пересчету суммы заказа и счетчика товаров в корзине
+'item:addBasket', (item: Product)
+//Инициируется при изменении нажатии на иконку корзины на главной странице и приводит к отрисовке корзины и карточек товаров а корзине
+'basket:open'
+//Инициируется при нажатии на иконку корзины в корзине и приводит к удалению товара из массива в корзине, пересчету суммы заказа и счетчика товаров в корзине
+'item:remove', (item: Product)
+//Инициируется при нажатии на кнопку "оформить" и отрисовывает форму для ввода способа оплаты и адреса доставки
+'order:open'
+//Инициируется при нажатии на кнопку "далее", сохраняет стоимость заказа и отрисовывает форму для ввода контактов
 'order:submit'
-//Инициируется при нажатии на кнопку "далее" и сохраняет параметры заказа (способ оплаты и адрес доставки)
-'address:submit'
-//Инициируется при нажатии на кнопку "оплатить" и сохраняет параметры заказа (почта и телефон)
+//Инициируется при нажатии на кнопку "оплатить", отправляет заказ на сервер, очищает текущий заказ и корзину
 'contacts:submit'
-//Инициируется при нажатии на кнопку "далее" и запускает валидацию параметров заказа (способ оплаты и адрес доставки)
-'address:validation'
-//Инициируется при нажатии на кнопку "оплатить" и запускает валидацию параметров заказа (почта и телефон)
-'contacts:validation'
+//Инициируется при нажатии на кнопку "оплатить", принимает id и сумму заказанных товаров и запускает отрисовку успешной оплаты
+'order:success', (result: ApiListResponse<string>)
+// Блокирует прокрутку страницы, если открыта модалка
+'modal:open'
+// ... и разблокирует
+'modal:close'
+//Инициируется при изменении состояния валидации формы ввода адреса и способа оплаты
+'orderFormErrors:change', (errors: Partial<IOrderForm>)
+//Инициируется при изменении состояния валидации формы ввода адреса и способа оплаты
+'contactsFormErrors:change', (errors: Partial<IOrderForm>)
+//Инициируется при изменении одного из полей заказа и приводит к изменению значений атрибутов заказа (при успешной валидации)
+'order:change', (data: { field: keyof IOrderForm, value: string })
 ```
 
 ## Установка и запуск

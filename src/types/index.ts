@@ -1,14 +1,14 @@
 //типы категорий товаров
 export type Category = 'другое' | 'софт-скил' | 'дополнительное' | 'кнопка' | 'хард-скил';
 
-//интерфейс карточки товара
-export interface ICard {
+//интерфейс товара с сервера
+export interface IProduct {
    //id с сервера
    id: string;
    //категория товара - используется на главной странице Page и при просмотре карточки
    category: Category;
    //наименование товара - используется на главной странице Page, при просмотре карточки и в корзине
-   name: string;
+   title: string;
    //описание товара - используется на при просмотре карточки
    description: string;
    //картинка товара - используется на главной странице Page и при просмотре карточки
@@ -19,25 +19,32 @@ export interface ICard {
    selected?: boolean;
 }
 
+//интерфейс карточки товара
+export interface ICard extends IProduct{
+   //находится ли товар в корзине
+  selected: boolean;
+  index?: number;
+}
+
 //состояние приложения
 export interface IAppState {
     //список товаров
-    catalog: ICard[];
+    catalog: IProduct[];
     //корзина
-    basket: ICard[];
+    basket: IProduct[];
     //заказ
     order: IOrder | null;
 }
 
 //способы оплаты
-export type Payment = 'Онлайн' | 'При получении';
+//export type Payment = 'Онлайн' | 'При получении';
 
 //модальное окно для оформления доставки
 export interface IDeliveryForm {
   //адрес
   address: string;
   //способ оплаты
-  payment: Payment;
+  payment: string;
 }
 
 //модальное окно "контакты"
@@ -48,10 +55,16 @@ export interface IContactsForm {
     phone: string;
 }
 
+//поля заказа
+export interface IOrderForm extends IDeliveryForm, IContactsForm {
+}
+
 //заказ
 export interface IOrder extends IDeliveryForm, IContactsForm {
+  //cписок id
+  items: string[];
   //список товаров
-  items: ICard[];
+ // items: IProduct[];
   //общая сумма заказа
   total: number;
 }
@@ -79,16 +92,10 @@ export interface IPage {
   blocked: boolean;
 }
 
-//просмотр выбранного товара
-export interface IViewProduct {
-  //выбранный товар
-  product: ICard;
-}
-
 //корзина
 export interface IBasket {
   //массив карточек товаров
-  list: ICard[];
+  items: HTMLElement[];
   //стоимость заказа
   price: number;
 }
@@ -108,4 +115,10 @@ export interface ISuccess {
 export interface ISuccessActions {
   //клик
   onClick: () => void;
+}
+
+//клик
+export interface ICardActions {
+  //клик
+  onClick: (event: MouseEvent) => void;
 }
